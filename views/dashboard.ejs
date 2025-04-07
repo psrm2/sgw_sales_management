@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <title>ダッシュボード - SGW売上管理</title>
   <link rel="stylesheet" href="/css/style.css">
+  <!-- FullCalendar CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet" />
 </head>
 <body>
   <header>
@@ -19,19 +21,18 @@
     <button class="tablink" onclick="openTab(event, 'Settings')">設定</button>
   </div>
   <div id="Calendar" class="tabcontent">
-    <!-- カレンダー表示（例：FullCalendar 等を利用） -->
-    <div id="calendarContainer">
-      <!-- カレンダー描画は dashboard.js 内で実装 -->
-    </div>
+    <div id="calendar"></div>
   </div>
   <div id="Graph" class="tabcontent" style="display:none">
-    <!-- グラフ表示（Chart.js などを利用） -->
     <canvas id="graphCanvas"></canvas>
   </div>
   <div id="Settings" class="tabcontent" style="display:none">
-    <!-- 運賃編集へのリンク -->
     <a href="/settings">運賃編集</a>
   </div>
+  <!-- FullCalendar JS -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="/js/dashboard.js"></script>
 </body>
 </html>

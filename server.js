@@ -13,9 +13,9 @@ const User = require('./models/User');
 const app = express();
 
 // MongoDB 接続
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/sgw_sales', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/sgw_sales', { 
+  useNewUrlParser: true, 
+  useUnifiedTopology: true 
 });
 
 // ミドルウェア設定
@@ -28,7 +28,7 @@ app.use(flash());
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Passport 設定（async/await 化）
+// Passport 設定（async/await 対応）
 passport.use(new LocalStrategy(async (username, password, done) => {
   try {
     const user = await User.findOne({ username: username }).exec();
@@ -39,7 +39,6 @@ passport.use(new LocalStrategy(async (username, password, done) => {
     return done(err);
   }
 }));
-
 passport.serializeUser((user, done) => {
   done(null, user.id);
 });
@@ -61,13 +60,13 @@ app.use('/', authRoutes);
 app.use('/', viewRoutes);
 app.use('/api', apiRoutes);
 
-// ルート "/" へのアクセスはログインページへリダイレクト
+// "/" へのアクセスはログインページへリダイレクト
 app.get('/', (req, res) => {
   res.redirect('/login');
 });
 
-// 特権ポートで動作させる場合、setcap で node に権限を付与済みであれば通常ユーザーで起動可
-const PORT = process.env.PORT || 3000;
+// 特権ポートで動作させる場合、setcap等で node に権限を付与しておく
+const PORT = process.env.PORT || 80;
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
 });

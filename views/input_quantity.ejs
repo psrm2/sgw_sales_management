@@ -20,21 +20,9 @@
     <button type="button" onclick="window.history.back()">キャンセル</button>
   </form>
   <script>
-    // フロントエンドの仮の運賃定義（本来は /api/fares から取得）
-    const fares = {
-      '一般宅配': 170,
-      '代引き': 190,
-      '着払い&クール': 190,
-      '指定場所': 150,
-      '160S': 300,
-      '170S': 400,
-      '180S': 500,
-      '200S': 600,
-      '集荷': 100,
-      '商業': 100,
-      'メール便': 40
-    };
-
+    // 仮の運賃定義は API 経由で取得することも可能ですが、ここでは簡易的に
+    const fares = <%- JSON.stringify(user.fares) %>;
+    
     function calculateSubtotal() {
       const form = document.getElementById('quantityForm');
       for (let key in fares) {
@@ -50,7 +38,6 @@
       for (let key in fares) {
         data.quantities[key] = parseInt(form.elements[key].value) || 0;
       }
-      // API にデータを送信
       const response = await fetch('/api/record', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

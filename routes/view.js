@@ -2,14 +2,13 @@ const express = require('express');
 const router = express.Router();
 const { ensureAuthenticated } = require('../middleware/auth');
 
-// ダッシュボード：カレンダー・グラフ・タブを含むメイン画面
+// ダッシュボード（カレンダー、グラフ、タブ）
 router.get('/dashboard', ensureAuthenticated, (req, res) => {
   res.render('dashboard', { user: req.user });
 });
 
-// 個数入力画面（対象の日付をクエリパラメータで受け取る例）
+// 個数入力画面（例： /input_quantity?date=2024-12-01 ）
 router.get('/input_quantity', ensureAuthenticated, (req, res) => {
-  // 例： /input_quantity?date=2024-12-01
   res.render('input_quantity', { date: req.query.date, user: req.user });
 });
 
