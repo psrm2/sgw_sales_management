@@ -16,54 +16,61 @@
   </header>
   <!-- 月合計表示 -->
   <div id="monthTotal" style="font-weight:bold; margin-bottom:10px;"></div>
-  <div id="calendar"></div>
+  <!-- カレンダー表示領域に最低高さを設定 -->
+  <div id="calendar" style="min-height:400px;"></div>
   <!-- FullCalendar JS -->
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
   <script>
     async function loadCalendar() {
-      // 指定ユーザーの入力データ取得（閲覧専用）
-      const response = await fetch('/api/records?userId=<%= user._id %>');
-      const records = await response.json();
-      const fares = <%- JSON.stringify(user.fares) %>;
-      
-      // FullCalendar イベント生成
-      const events = records.map(record => {
-        let total = 0;
-        for (let key in record.quantities) {
-          total += (record.quantities[key] || 0) * (fares[key] || 0);
-        }
-        return {
-          title: '¥' + total,
-          start: record.date
-        };
-      });
-      
-      var calendarEl = document.getElementById('calendar');
-      var calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        events: events,
-        datesSet: function(info) {
-          let monthTotal = 0;
-          records.forEach(record => {
-            const recordDate = new Date(record.date);
-            if (recordDate >= info.start && recordDate < info.end) {
-              let dailyTotal = 0;
-              for (let key in record.quantities) {
-                dailyTotal += (record.quantities[key] || 0) * (fares[key] || 0);
+      try {
+        // 管理者用として、指定ユーザーの入力データを取得
+        const response = await fetch('/api/records?userId=<%= user._id %>');
+        const records = await response.json();
+        console.log("Records:", records);
+        const fares = <%- JSON.stringify(user.fares) %>;
+
+        // FullCalendar 用のイベントデータを生成
+        const events = records.map(record => {
+          let total = 0;
+          for (let key in record.quantities) {
+            total += (record.quantities[key] || 0) * (fares[key] || 0);
+          }
+          return {
+            title: '¥' + total,
+            start: record.date
+          };
+        });
+
+        var calendarEl = document.getElementById('calendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+          initialView: 'dayGridMonth',
+          events: events,
+          // 表示期間が変わった際に当月の合計金額を計算して表示
+          datesSet: function(info) {
+            let monthTotal = 0;
+            records.forEach(record => {
+              const recordDate = new Date(record.date);
+              if (recordDate >= info.start && recordDate < info.end) {
+                let dailyTotal = 0;
+                for (let key in record.quantities) {
+                  dailyTotal += (record.quantities[key] || 0) * (fares[key] || 0);
+                }
+                monthTotal += dailyTotal;
               }
-              monthTotal += dailyTotal;
-            }
-          });
-          document.getElementById("monthTotal").textContent = "月合計: ¥" + monthTotal;
-        },
-        // 編集不可：クリック時は警告を表示
-        dateClick: function(info) {
-          alert("閲覧専用です。編集はできません。");
-        }
-      });
-      calendar.render();
+            });
+            document.getElementById("monthTotal").textContent = "月合計: ¥" + monthTotal;
+          },
+          // 閲覧専用のため、日付クリック時は編集不可のメッセージを表示
+          dateClick: function(info) {
+            alert("閲覧専用です。編集はできません。");
+          }
+        });
+        calendar.render();
+      } catch (error) {
+        console.error("Error loading calendar:", error);
+      }
     }
-    
+
     document.addEventListener('DOMContentLoaded', loadCalendar);
   </script>
 </body>
