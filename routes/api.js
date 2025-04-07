@@ -28,9 +28,16 @@ router.get('/admin/records', ensureAuthenticated, async (req, res) => {
 
 // 入力データの新規作成／更新
 router.post('/record', ensureAuthenticated, async (req, res) => {
-  const { date, quantities } = req.body;
-  // 日付のフォーマットを "YYYY-MM-DD" に統一
-  const formattedDate = new Date(date).toISOString().slice(0,10);
+  let { date, quantities } = req.body;
+  if (!date) {
+    return res.status(400).json({ error: "date は必須です" });
+  }
+  const d = new Date(date);
+  if (isNaN(d)) {
+    return res.status(400).json({ error: "無効な日付です" });
+  }
+  // 日付フォーマットを "YYYY-MM-DD" に統一
+  const formattedDate = d.toISOString().slice(0, 10);
   try {
     let record = await DataRecord.findOne({ user: req.user._id, date: formattedDate });
     if (record) {
