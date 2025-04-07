@@ -1,15 +1,38 @@
 body {
   font-family: Arial, sans-serif;
   margin: 0;
-  padding: 0;
+  padding: 20px;
 }
 
-header, main {
-  padding: 20px;
+header {
+  background: #007ACC;
+  color: white;
+  padding: 10px;
+}
+
+h1 {
+  margin: 0 0 10px;
 }
 
 .error {
   color: red;
 }
 
-/* その他、スマホ向けのレスポンシブ対応 CSS を追加してください */
+.tabs {
+  margin: 20px 0;
+}
+
+.tablink {
+  padding: 10px;
+  margin-right: 5px;
+  cursor: pointer;
+}
+
+.tabcontent {
+  border: 1px solid #ccc;
+  padding: 10px;
+}
+
+.form-row {
+  margin: 10px 0;
+}

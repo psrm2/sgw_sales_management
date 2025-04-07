@@ -1,8 +1,18 @@
-// dashboard.js
-// ここでは、カレンダーやグラフの描画、API との連携を実装します。
-// 例：fetch() を使って /api/records からデータを取得し、UI を更新する処理など
+function openTab(evt, tabName) {
+  var i, tabcontent, tablinks;
+  tabcontent = document.getElementsByClassName("tabcontent");
+  for (i = 0; i < tabcontent.length; i++) {
+    tabcontent[i].style.display = "none";
+  }
+  tablinks = document.getElementsByClassName("tablink");
+  for (i = 0; i < tablinks.length; i++) {
+    tablinks[i].className = tablinks[i].className.replace(" active", "");
+  }
+  document.getElementById(tabName).style.display = "block";
+  evt.currentTarget.className += " active";
+}
 
-document.addEventListener('DOMContentLoaded', function() {
-  console.log("Dashboard loaded");
-  // 必要に応じて FullCalendar, Chart.js などの初期化処理を記述
-});
+// デフォルトタブを開く
+document.getElementById("defaultTab").click();
+
+// ここに FullCalendar や Chart.js の初期化処理を追加可能

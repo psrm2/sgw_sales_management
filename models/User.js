@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt');
 const UserSchema = new mongoose.Schema({
   username: { type: String, unique: true },
   password: String,
-  role: { type: String, default: 'user' } // 管理者の場合は "admin"
+  role: { type: String, default: 'user' } // 管理者は 'admin'
 });
 
 UserSchema.methods.verifyPassword = function(password) {

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>個数入力 - <%= date %></title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <h1>個数入力（<%= date %>）</h1>
+  <form id="quantityForm">
+    <% const items = ['一般宅配','代引き','着払い&クール','指定場所','160S','170S','180S','200S','集荷','商業','メール便']; %>
+    <% items.forEach(function(item) { %>
+      <div class="form-row">
+        <label><%= item %>:</label>
+        <input type="number" name="<%= item %>" value="0" min="0" onchange="calculateSubtotal()">
+        <span class="subtotal" id="subtotal-<%= item %>">¥0</span>
+      </div>
+    <% }); %>
+    <button type="button" onclick="submitForm()">完了</button>
+    <button type="button" onclick="window.history.back()">キャンセル</button>
+  </form>
+  <script>
+    // フロントエンドの仮の運賃定義（本来は /api/fares から取得）
+    const fares = {
+      '一般宅配': 170,
+      '代引き': 190,
+      '着払い&クール': 190,
+      '指定場所': 150,
+      '160S': 300,
+      '170S': 400,
+      '180S': 500,
+      '200S': 600,
+      '集荷': 100,
+      '商業': 100,
+      'メール便': 40
+    };
+
+    function calculateSubtotal() {
+      const form = document.getElementById('quantityForm');
+      for (let key in fares) {
+        const qty = parseInt(form.elements[key].value) || 0;
+        const subtotal = qty * fares[key];
+        document.getElementById('subtotal-' + key).textContent = '¥' + subtotal;
+      }
+    }
+
+    async function submitForm() {
+      const form = document.getElementById('quantityForm');
+      const data = { date: "<%= date %>", quantities: {} };
+      for (let key in fares) {
+        data.quantities[key] = parseInt(form.elements[key].value) || 0;
+      }
+      // API にデータを送信
+      const response = await fetch('/api/record', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (response.ok) {
+        alert("保存しました");
+        window.location.href = '/dashboard';
+      } else {
+        alert("保存に失敗しました");
+      }
+    }
+  </script>
+</body>
+</html>

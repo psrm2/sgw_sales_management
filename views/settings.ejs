@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>運賃編集 - SGW売上管理</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <h1>運賃編集</h1>
+  <form id="fareForm">
+    <% const items = ['一般宅配','代引き','着払い&クール','指定場所','160S','170S','180S','200S','集荷','商業','メール便']; %>
+    <% items.forEach(function(item) { %>
+      <div class="form-row">
+        <label><%= item %>:</label>
+        <input type="number" name="<%= item %>" value="0" min="0">
+      </div>
+    <% }); %>
+    <button type="button" onclick="submitFare()">反映</button>
+    <button type="button" onclick="window.history.back()">キャンセル</button>
+  </form>
+  <script>
+    async function loadFares() {
+      const response = await fetch('/api/fares');
+      const data = await response.json();
+      const form = document.getElementById('fareForm');
+      for (let key in data) {
+        if(form.elements[key])
+          form.elements[key].value = data[key];
+      }
+    }
+    async function submitFare() {
+      const form = document.getElementById('fareForm');
+      const fares = {};
+      for (let element of form.elements) {
+        if (element.name) {
+          fares[element.name] = parseInt(element.value) || 0;
+        }
+      }
+      const response = await fetch('/api/fares', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fares)
+      });
+      if (response.ok) {
+        alert("運賃を更新しました");
+        window.location.href = '/dashboard';
+      } else {
+        alert("更新に失敗しました");
+      }
+    }
+    loadFares();
+  </script>
+</body>
+</html>
