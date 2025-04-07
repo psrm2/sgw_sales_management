@@ -9,6 +9,7 @@ router.get('/records', ensureAuthenticated, async (req, res) => {
     const records = await DataRecord.find({ user: req.user._id });
     res.json(records);
   } catch (e) {
+    console.error("Error fetching records:", e);
     res.status(500).json({ error: 'データ取得に失敗しました' });
   }
 });
@@ -22,6 +23,7 @@ router.get('/admin/records', ensureAuthenticated, async (req, res) => {
     const records = await DataRecord.find().populate('user');
     res.json(records);
   } catch (e) {
+    console.error("Error fetching admin records:", e);
     res.status(500).json({ error: 'データ取得に失敗しました' });
   }
 });
@@ -29,6 +31,9 @@ router.get('/admin/records', ensureAuthenticated, async (req, res) => {
 // 入力データの新規作成／更新
 router.post('/record', ensureAuthenticated, async (req, res) => {
   let { date, quantities } = req.body;
+  console.log("Received date:", date);
+  console.log("Received quantities:", quantities);
+
   if (!date) {
     return res.status(400).json({ error: "date は必須です" });
   }
@@ -36,18 +41,27 @@ router.post('/record', ensureAuthenticated, async (req, res) => {
   if (isNaN(d)) {
     return res.status(400).json({ error: "無効な日付です" });
   }
+  // 数値に変換（必要なら）
+  for (let key in quantities) {
+    quantities[key] = parseInt(quantities[key], 10) || 0;
+  }
   // 日付フォーマットを "YYYY-MM-DD" に統一
   const formattedDate = d.toISOString().slice(0, 10);
+  console.log("Formatted date:", formattedDate);
+
   try {
     let record = await DataRecord.findOne({ user: req.user._id, date: formattedDate });
     if (record) {
+      console.log("Updating existing record");
       record.quantities = quantities;
     } else {
+      console.log("Creating new record");
       record = new DataRecord({ user: req.user._id, date: formattedDate, quantities: quantities });
     }
     await record.save();
     res.json({ message: '保存しました' });
   } catch (e) {
+    console.error("Error saving record:", e);
     res.status(500).json({ error: 'データ保存に失敗しました' });
   }
 });
@@ -64,6 +78,7 @@ router.post('/fares', ensureAuthenticated, async (req, res) => {
     await req.user.save();
     res.json({ message: '運賃を更新しました', fares: req.user.fares });
   } catch(e) {
+    console.error("Error updating fares:", e);
     res.status(500).json({ error: '運賃更新に失敗しました' });
   }
 });
