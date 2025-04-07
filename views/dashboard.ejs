@@ -28,6 +28,9 @@
   </div>
   <div id="Settings" class="tabcontent" style="display:none">
     <a href="/settings">運賃編集</a>
+    <% if(user.username === "deldb") { %>
+      <button onclick="resetDatabase()">MongoDB 初期化</button>
+    <% } %>
   </div>
   <!-- FullCalendar JS -->
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>

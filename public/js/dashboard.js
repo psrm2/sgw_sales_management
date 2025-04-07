@@ -75,3 +75,20 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
   });
 });
+
+// MongoDB 初期化用関数（ログインユーザーが "deldb" の場合のみ表示されるボタンから呼ばれる）
+async function resetDatabase() {
+  if (!confirm("本当に MongoDB を初期化してすべてのデータを削除しますか？")) return;
+  try {
+    const response = await fetch('/api/reset', { method: 'POST' });
+    if (response.ok) {
+      alert("データベースを初期化しました");
+      location.reload();
+    } else {
+      const result = await response.json();
+      alert("初期化に失敗しました: " + result.error);
+    }
+  } catch (err) {
+    alert("エラーが発生しました: " + err.message);
+  }
+}
