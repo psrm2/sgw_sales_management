@@ -8,10 +8,14 @@
 <body>
   <h1>個数入力（<%= date %>）</h1>
   <form id="quantityForm">
-    <% const items = ['一般宅配','代引き','着払い&クール','指定場所','160S','170S','180S','200S','集荷','商業','メール便']; %>
+    <% 
+      const items = ['一般宅配','代引き','着払い&クール','指定場所','160S','170S','180S','200S','集荷','商業','メール便']; 
+      // record が存在すれば record.quantities を使用。なければ空のオブジェクトとする
+      const savedQuantities = record && record.quantities ? record.quantities : {};
+    %>
     <% items.forEach(function(item) { 
-         // record があれば初期値として設定。無ければ 0。
-         const initial = record && record.quantities && record.quantities[item] ? record.quantities[item] : 0;
+         // savedQuantities に存在する場合はその値、存在しなければ 0 を初期値とする
+         const initial = savedQuantities[item] !== undefined ? savedQuantities[item] : 0;
     %>
       <div class="form-row">
         <label><%= item %>:</label>
@@ -23,7 +27,7 @@
     <button type="button" onclick="window.history.back()">キャンセル</button>
   </form>
   <script>
-    // ログインユーザーごとの運賃をサーバー側から EJS 経由で受け取る
+    // ユーザーごとの運賃はサーバー側から渡される (EJS 経由)
     const fares = <%- JSON.stringify(user.fares) %>;
     
     function calculateSubtotal() {
