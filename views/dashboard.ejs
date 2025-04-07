@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>ダッシュボード - SGW売上管理</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- FullCalendar, Chart.js 等のライブラリを必要に応じて読み込む -->
+</head>
+<body>
+  <header>
+    <h1>SGW売上管理 ダッシュボード</h1>
+    <p>ようこそ, <%= user.username %> さん (<%= user.role %>)</p>
+    <nav>
+      <a href="/logout">ログアウト</a>
+    </nav>
+  </header>
+  <main>
+    <!-- カレンダー、グラフ、設定などのタブ切替は JavaScript により実装 -->
+    <div id="app">
+      <!-- ここにフロントエンドの実装（例：AJAX 経由で /api からデータ取得して描画） -->
+      <p>ここにカレンダーやグラフの UI を実装してください。</p>
+    </div>
+  </main>
+  <script src="/js/dashboard.js"></script>
+</body>
+</html>

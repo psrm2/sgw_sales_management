@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>ユーザー登録 - SGW売上管理</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <h1>ユーザー登録</h1>
+  <% if(message && message.length > 0) { %>
+    <p class="error"><%= message %></p>
+  <% } %>
+  <form action="/register" method="post">
+    <label>ユーザー名：</label><input type="text" name="username" required><br>
+    <label>パスワード：</label><input type="password" name="password" required><br>
+    <!-- 管理者権限を付与したい場合は、role を指定 -->
+    <input type="hidden" name="role" value="user">
+    <button type="submit">登録</button>
+  </form>
+  <p>すでにアカウントをお持ちの方は <a href="/login">ログイン</a> してください。</p>
+</body>
+</html>

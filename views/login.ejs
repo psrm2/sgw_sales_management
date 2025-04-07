@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>ログイン - SGW売上管理</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <h1>ログイン</h1>
+  <% if(message && message.length > 0) { %>
+    <p class="error"><%= message %></p>
+  <% } %>
+  <form action="/login" method="post">
+    <label>ユーザー名：</label><input type="text" name="username" required><br>
+    <label>パスワード：</label><input type="password" name="password" required><br>
+    <button type="submit">ログイン</button>
+  </form>
+  <p>まだアカウントをお持ちでない方は <a href="/register">登録</a> してください。</p>
+</body>
+</html>

@@ -1,0 +1,15 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+header, main {
+  padding: 20px;
+}
+
+.error {
+  color: red;
+}
+
+/* その他、スマホ向けのレスポンシブ対応 CSS を追加してください */
