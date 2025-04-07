@@ -28,13 +28,15 @@ router.get('/admin/records', ensureAuthenticated, async (req, res) => {
 
 // 入力データの新規作成／更新
 router.post('/record', ensureAuthenticated, async (req, res) => {
-  const { date, quantities } = req.body; // quantities はオブジェクト
+  const { date, quantities } = req.body;
+  // 日付のフォーマットを "YYYY-MM-DD" に統一
+  const formattedDate = new Date(date).toISOString().slice(0,10);
   try {
-    let record = await DataRecord.findOne({ user: req.user._id, date: date });
+    let record = await DataRecord.findOne({ user: req.user._id, date: formattedDate });
     if (record) {
       record.quantities = quantities;
     } else {
-      record = new DataRecord({ user: req.user._id, date: date, quantities: quantities });
+      record = new DataRecord({ user: req.user._id, date: formattedDate, quantities: quantities });
     }
     await record.save();
     res.json({ message: '保存しました' });

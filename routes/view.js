@@ -8,11 +8,13 @@ router.get('/dashboard', ensureAuthenticated, (req, res) => {
   res.render('dashboard', { user: req.user });
 });
 
-// 個数入力画面：日付をクエリパラメータで受け取り、該当日の保存データを取得
+// 個数入力画面：クエリパラメータ date を受け取り、フォーマットを統一して保存済みデータを取得
 router.get('/input_quantity', ensureAuthenticated, async (req, res) => {
   const date = req.query.date;
-  let record = await DataRecord.findOne({ user: req.user._id, date: date });
-  res.render('input_quantity', { date: date, user: req.user, record: record });
+  // フォーマットを "YYYY-MM-DD" に統一
+  const formattedDate = new Date(date).toISOString().slice(0,10);
+  let record = await DataRecord.findOne({ user: req.user._id, date: formattedDate });
+  res.render('input_quantity', { date: formattedDate, user: req.user, record: record });
 });
 
 // 運賃編集画面
