@@ -20,10 +20,15 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/sgw_sales',
 
 // ミドルウェア設定
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json()); // JSON ボディのパースを有効化
 app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'ejs');
 
-app.use(session({ secret: process.env.SESSION_SECRET || 'secretkey', resave: false, saveUninitialized: false }));
+app.use(session({ 
+  secret: process.env.SESSION_SECRET || 'secretkey', 
+  resave: false, 
+  saveUninitialized: false 
+}));
 app.use(flash());
 app.use(passport.initialize());
 app.use(passport.session());
@@ -60,13 +65,13 @@ app.use('/', authRoutes);
 app.use('/', viewRoutes);
 app.use('/api', apiRoutes);
 
-// "/" へのアクセスはログインページへリダイレクト
+// ルート "/" へのアクセスはログインページへリダイレクト
 app.get('/', (req, res) => {
   res.redirect('/login');
 });
 
-// 特権ポートで動作させる場合、setcap等で node に権限を付与しておく
-const PORT = process.env.PORT || 80;
+// 特権ポートで動作させる場合、setcap 等で node に権限を付与済みであれば通常ユーザーで起動可
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
 });
