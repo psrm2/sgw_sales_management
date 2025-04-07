@@ -1,31 +1,36 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const DataRecord = require('../models/DataRecord');
 const { ensureAuthenticated } = require('../middleware/auth');
 
-// ユーザーごとの入力データ取得（管理者なら ?userId= で取得可能）
+// ユーザーごとの入力データ取得
 router.get('/records', ensureAuthenticated, async (req, res) => {
   try {
     let query;
-    if (req.query.userId && req.user.role === 'admin') {
+    // 管理者セッションの場合は、クエリパラメータ userId を使ってデータを取得
+    if (req.session.admin && req.query.userId) {
       query = { user: req.query.userId };
-    } else {
+    } else if (req.user) {
       query = { user: req.user._id };
+    } else {
+      return res.status(400).json({ error: 'ユーザー情報がありません' });
     }
-    const records = await DataRecord.find(query);
+    const records = await DataRecord.find(query).exec();
     res.json(records);
   } catch (e) {
+    console.error("Error in GET /records:", e);
     res.status(500).json({ error: 'データ取得に失敗しました' });
   }
 });
 
-// 管理者向け：全ユーザーのデータ取得（管理者ルートとしても利用可能）
+// 管理者向け：全ユーザーのデータ取得
 router.get('/admin/records', ensureAuthenticated, async (req, res) => {
-  if (req.user.role !== 'admin') {
+  if (req.user && req.user.role !== 'admin' && !req.session.admin) {
     return res.status(403).json({ error: '権限がありません' });
   }
   try {
-    const records = await DataRecord.find().populate('user');
+    const records = await DataRecord.find().populate('user').exec();
     res.json(records);
   } catch (e) {
     res.status(500).json({ error: 'データ取得に失敗しました' });
@@ -50,15 +55,15 @@ router.post('/record', ensureAuthenticated, async (req, res) => {
   console.log("Formatted date:", formattedDate);
 
   try {
-    // 数量の各値を数値に変換
+    // 数量は文字列の場合もあるため、数値に変換
     for (let key in quantities) {
       quantities[key] = parseInt(quantities[key], 10) || 0;
     }
-    let record = await DataRecord.findOne({ user: req.user._id, date: formattedDate });
+    let record = await DataRecord.findOne({ user: req.user ? req.user._id : req.session.userId, date: formattedDate }).exec();
     if (record) {
       record.quantities = quantities;
     } else {
-      record = new DataRecord({ user: req.user._id, date: formattedDate, quantities: quantities });
+      record = new DataRecord({ user: req.user ? req.user._id : req.session.userId, date: formattedDate, quantities: quantities });
     }
     await record.save();
     res.json({ message: '保存しました' });
@@ -70,15 +75,26 @@ router.post('/record', ensureAuthenticated, async (req, res) => {
 
 // GET: ログインユーザーの運賃取得
 router.get('/fares', ensureAuthenticated, (req, res) => {
-  res.json(req.user.fares);
+  if (req.user) {
+    res.json(req.user.fares);
+  } else if (req.session.admin && req.query.userId) {
+    // 管理者の場合は、別途ユーザー情報を取得する必要があるが、ここでは admin_calendar.ejs で EJS 経由で運賃を渡すので不要
+    res.json({});
+  } else {
+    res.status(400).json({ error: 'ユーザー情報がありません' });
+  }
 });
 
 // POST: ログインユーザーの運賃更新
 router.post('/fares', ensureAuthenticated, async (req, res) => {
   try {
-    req.user.fares = req.body; // req.body は運賃オブジェクト
-    await req.user.save();
-    res.json({ message: '運賃を更新しました', fares: req.user.fares });
+    if (req.user) {
+      req.user.fares = req.body; // req.body は運賃オブジェクト
+      await req.user.save();
+      res.json({ message: '運賃を更新しました', fares: req.user.fares });
+    } else {
+      res.status(400).json({ error: 'ユーザー情報がありません' });
+    }
   } catch (e) {
     res.status(500).json({ error: '運賃更新に失敗しました' });
   }
@@ -86,7 +102,7 @@ router.post('/fares', ensureAuthenticated, async (req, res) => {
 
 // POST: MongoDB 初期化（ログインユーザーが "deldb" の場合のみ）
 router.post('/reset', ensureAuthenticated, async (req, res) => {
-  if (req.user.username !== "deldb") {
+  if (req.user && req.user.username !== "deldb" && !req.session.admin) {
     return res.status(403).json({ error: "Not authorized" });
   }
   try {
