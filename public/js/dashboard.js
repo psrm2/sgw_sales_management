@@ -15,16 +15,15 @@ function openTab(evt, tabName) {
 // 初期タブを開く
 document.getElementById("defaultTab").click();
 
-// 初期化処理（FullCalendar, Chart.js）
 document.addEventListener('DOMContentLoaded', async function() {
-  // 取得：入力データと運賃
+  // API 経由でユーザーの入力データと運賃を取得
   const recordsResponse = await fetch('/api/records');
   const records = await recordsResponse.json();
   
   const faresResponse = await fetch('/api/fares');
   const fares = await faresResponse.json();
 
-  // カレンダー用イベント作成
+  // 各レコードから日別合計金額を算出し、イベントとして設定
   const events = records.map(record => {
     let total = 0;
     for (let key in record.quantities) {
@@ -41,19 +40,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     initialView: 'dayGridMonth',
     events: events,
     dateClick: function(info) {
-      // 日付クリックで個数入力画面へ遷移
+      // 日付クリックで、その日の入力データ編集画面へ遷移
       window.location.href = '/input_quantity?date=' + info.dateStr;
     }
   });
   calendar.render();
 
-  // グラフ用データ：当月の日別売上集計
+  // グラフ表示例：当月の日別売上集計（Chart.js 使用）
   let dailyTotals = {};
   records.forEach(record => {
-    // record.date は "YYYY-MM-DD" 形式と仮定
-    if (!dailyTotals[record.date]) {
-      dailyTotals[record.date] = 0;
-    }
+    if (!dailyTotals[record.date]) dailyTotals[record.date] = 0;
     for (let key in record.quantities) {
       dailyTotals[record.date] += (record.quantities[key] || 0) * (fares[key] || 0);
     }
@@ -74,9 +70,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     },
     options: {
       scales: {
-        y: {
-          beginAtZero: true
-        }
+        y: { beginAtZero: true }
       }
     }
   });

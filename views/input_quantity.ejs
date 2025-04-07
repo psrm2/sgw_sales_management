@@ -9,10 +9,13 @@
   <h1>個数入力（<%= date %>）</h1>
   <form id="quantityForm">
     <% const items = ['一般宅配','代引き','着払い&クール','指定場所','160S','170S','180S','200S','集荷','商業','メール便']; %>
-    <% items.forEach(function(item) { %>
+    <% items.forEach(function(item) { 
+         // record があれば初期値として設定。無ければ 0。
+         const initial = record && record.quantities && record.quantities[item] ? record.quantities[item] : 0;
+    %>
       <div class="form-row">
         <label><%= item %>:</label>
-        <input type="number" name="<%= item %>" value="0" min="0" onchange="calculateSubtotal()">
+        <input type="number" name="<%= item %>" value="<%= initial %>" min="0" onchange="calculateSubtotal()">
         <span class="subtotal" id="subtotal-<%= item %>">¥0</span>
       </div>
     <% }); %>
@@ -20,7 +23,7 @@
     <button type="button" onclick="window.history.back()">キャンセル</button>
   </form>
   <script>
-    // 仮の運賃定義は API 経由で取得することも可能ですが、ここでは簡易的に
+    // ログインユーザーごとの運賃をサーバー側から EJS 経由で受け取る
     const fares = <%- JSON.stringify(user.fares) %>;
     
     function calculateSubtotal() {
@@ -31,7 +34,10 @@
         document.getElementById('subtotal-' + key).textContent = '¥' + subtotal;
       }
     }
-
+    
+    // 初期計算
+    calculateSubtotal();
+    
     async function submitForm() {
       const form = document.getElementById('quantityForm');
       const data = { date: "<%= date %>", quantities: {} };
