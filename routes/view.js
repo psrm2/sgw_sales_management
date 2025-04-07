@@ -11,8 +11,7 @@ router.get('/dashboard', ensureAuthenticated, (req, res) => {
 // 個数入力画面：クエリパラメータ date を受け取り、フォーマットを統一して保存済みデータを取得
 router.get('/input_quantity', ensureAuthenticated, async (req, res) => {
   const date = req.query.date;
-  // フォーマットを "YYYY-MM-DD" に統一
-  const formattedDate = new Date(date).toISOString().slice(0,10);
+  const formattedDate = new Date(date).toISOString().slice(0, 10);
   let record = await DataRecord.findOne({ user: req.user._id, date: formattedDate });
   res.render('input_quantity', { date: formattedDate, user: req.user, record: record });
 });

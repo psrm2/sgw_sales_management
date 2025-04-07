@@ -1,20 +1,25 @@
 const express = require('express');
 const router = express.Router();
-const mongoose = require('mongoose');
 const DataRecord = require('../models/DataRecord');
 const { ensureAuthenticated } = require('../middleware/auth');
 
-// ユーザーごとの入力データ取得
+// ユーザーごとの入力データ取得（管理者なら ?userId= で取得可能）
 router.get('/records', ensureAuthenticated, async (req, res) => {
   try {
-    const records = await DataRecord.find({ user: req.user._id });
+    let query;
+    if (req.query.userId && req.user.role === 'admin') {
+      query = { user: req.query.userId };
+    } else {
+      query = { user: req.user._id };
+    }
+    const records = await DataRecord.find(query);
     res.json(records);
   } catch (e) {
     res.status(500).json({ error: 'データ取得に失敗しました' });
   }
 });
 
-// 管理者向け：全ユーザーのデータ取得
+// 管理者向け：全ユーザーのデータ取得（管理者ルートとしても利用可能）
 router.get('/admin/records', ensureAuthenticated, async (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ error: '権限がありません' });
@@ -45,7 +50,7 @@ router.post('/record', ensureAuthenticated, async (req, res) => {
   console.log("Formatted date:", formattedDate);
 
   try {
-    // 数量は文字列の場合もあるので数値に変換
+    // 数量の各値を数値に変換
     for (let key in quantities) {
       quantities[key] = parseInt(quantities[key], 10) || 0;
     }

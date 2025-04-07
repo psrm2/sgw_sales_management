@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>管理者用：登録ユーザー一覧</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <h1>登録ユーザー一覧</h1>
+  <ul>
+    <% users.forEach(function(user) { %>
+      <li>
+        <a href="/admin/calendar?userId=<%= user._id %>"><%= user.username %></a>
+        <button onclick="deleteUser('<%= user._id %>')">削除</button>
+      </li>
+    <% }); %>
+  </ul>
+  <a href="/login">ログイン画面に戻る</a>
+
+  <script>
+    async function deleteUser(userId) {
+      if (!confirm("本当にこのユーザーを削除しますか？この操作は元に戻せません。")) return;
+      try {
+        const response = await fetch('/admin/deleteUser', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: userId })
+        });
+        if (response.ok) {
+          alert("ユーザーを削除しました");
+          location.reload();
+        } else {
+          const result = await response.json();
+          alert("削除に失敗しました: " + result.error);
+        }
+      } catch (err) {
+        alert("エラーが発生しました: " + err.message);
+      }
+    }
+  </script>
+</body>
+</html>

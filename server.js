@@ -24,11 +24,7 @@ app.use(bodyParser.json()); // JSON ボディのパースを有効化
 app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'ejs');
 
-app.use(session({ 
-  secret: process.env.SESSION_SECRET || 'secretkey', 
-  resave: false, 
-  saveUninitialized: false 
-}));
+app.use(session({ secret: process.env.SESSION_SECRET || 'secretkey', resave: false, saveUninitialized: false }));
 app.use(flash());
 app.use(passport.initialize());
 app.use(passport.session());
@@ -60,18 +56,20 @@ passport.deserializeUser(async (id, done) => {
 const authRoutes = require('./routes/auth');
 const apiRoutes = require('./routes/api');
 const viewRoutes = require('./routes/view');
+const adminRoutes = require('./routes/admin');
 
 app.use('/', authRoutes);
 app.use('/', viewRoutes);
 app.use('/api', apiRoutes);
+app.use('/admin', adminRoutes);
 
-// ルート "/" へのアクセスはログインページへリダイレクト
+// "/" へのアクセスはログインページへリダイレクト
 app.get('/', (req, res) => {
   res.redirect('/login');
 });
 
 // 特権ポートで動作させる場合、setcap 等で node に権限を付与済みであれば通常ユーザーで起動可
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 80;
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
 });

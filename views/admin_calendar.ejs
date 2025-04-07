@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title><%= user.username %> のカレンダー</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- FullCalendar CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet" />
+</head>
+<body>
+  <header>
+    <h1><%= user.username %> のカレンダー（閲覧専用）</h1>
+    <nav>
+      <a href="/admin/users">ユーザー一覧に戻る</a>
+    </nav>
+  </header>
+  <!-- 月合計表示 -->
+  <div id="monthTotal" style="font-weight:bold; margin-bottom:10px;"></div>
+  <div id="calendar"></div>
+  <!-- FullCalendar JS -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    async function loadCalendar() {
+      // 管理者として指定したユーザーの入力データを取得
+      const response = await fetch('/api/records?userId=<%= user._id %>');
+      const records = await response.json();
+      const fares = <%- JSON.stringify(user.fares) %>;
+
+      // FullCalendar イベント生成
+      const events = records.map(record => {
+        let total = 0;
+        for (let key in record.quantities) {
+          total += (record.quantities[key] || 0) * (fares[key] || 0);
+        }
+        return {
+          title: '¥' + total,
+          start: record.date
+        };
+      });
+      
+      var calendarEl = document.getElementById('calendar');
+      var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        events: events,
+        datesSet: function(info) {
+          let monthTotal = 0;
+          records.forEach(record => {
+            const recordDate = new Date(record.date);
+            if (recordDate >= info.start && recordDate < info.end) {
+              let dailyTotal = 0;
+              for (let key in record.quantities) {
+                dailyTotal += (record.quantities[key] || 0) * (fares[key] || 0);
+              }
+              monthTotal += dailyTotal;
+            }
+          });
+          document.getElementById("monthTotal").textContent = "月合計: ¥" + monthTotal;
+        },
+        // 編集不可：クリック時に警告を表示
+        dateClick: function(info) {
+          alert("閲覧専用です。編集はできません。");
+        }
+      });
+      calendar.render();
+    }
+    
+    document.addEventListener('DOMContentLoaded', loadCalendar);
+  </script>
+</body>
+</html>
