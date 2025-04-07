@@ -2,6 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ダッシュボード - SGW売上管理</title>
   <link rel="stylesheet" href="/css/style.css">
   <!-- FullCalendar CSS -->
@@ -21,9 +22,8 @@
     <button class="tablink" onclick="openTab(event, 'Settings')">設定</button>
   </div>
   <div id="Calendar" class="tabcontent">
-    <!-- 月合計表示用 -->
     <div id="monthTotal" style="font-weight:bold; margin-bottom:10px;"></div>
-    <div id="calendar"></div>
+    <div id="calendar" style="min-height:400px;"></div>
   </div>
   <div id="Graph" class="tabcontent" style="display:none">
     <canvas id="graphCanvas"></canvas>

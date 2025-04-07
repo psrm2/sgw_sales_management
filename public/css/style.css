@@ -1,3 +1,4 @@
+/* ベーススタイル */
 body {
   font-family: Arial, sans-serif;
   margin: 0;
@@ -8,10 +9,17 @@ header {
   background: #007ACC;
   color: white;
   padding: 10px;
+  text-align: center;
 }
 
 h1 {
   margin: 0 0 10px;
+}
+
+nav a {
+  color: white;
+  text-decoration: none;
+  margin: 0 10px;
 }
 
 .error {
@@ -20,19 +28,60 @@ h1 {
 
 .tabs {
   margin: 20px 0;
+  text-align: center;
 }
 
 .tablink {
   padding: 10px;
   margin-right: 5px;
   cursor: pointer;
+  background: #f0f0f0;
+  border: none;
+  font-size: 16px;
+}
+
+.tablink.active {
+  background: #007ACC;
+  color: white;
 }
 
 .tabcontent {
   border: 1px solid #ccc;
   padding: 10px;
+  margin-bottom: 20px;
 }
 
-.form-row {
-  margin: 10px 0;
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  body {
+    padding: 10px;
+  }
+  
+  header {
+    padding: 5px;
+  }
+  
+  .tablink {
+    font-size: 14px;
+    padding: 8px;
+    margin-right: 3px;
+  }
+  
+  nav a {
+    margin: 0 5px;
+  }
+}
+
+/* さらにスマートフォン向け */
+@media (max-width: 480px) {
+  h1 {
+    font-size: 20px;
+  }
+  .tablink {
+    font-size: 12px;
+    padding: 6px;
+  }
+  body {
+    font-size: 14px;
+  }
 }
