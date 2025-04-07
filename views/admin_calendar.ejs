@@ -23,13 +23,19 @@
   <script>
     async function loadCalendar() {
       try {
-        // 管理者用として、指定ユーザーの入力データを取得
+        // API から対象ユーザーの入力データを取得
         const response = await fetch('/api/records?userId=<%= user._id %>');
+        console.log("Response status:", response.status);
+        console.log("Content-Type:", response.headers.get('content-type'));
+        
+        // JSON パースを試みる
         const records = await response.json();
         console.log("Records:", records);
+        
+        // ユーザーごとの運賃情報は EJS 経由で渡される
         const fares = <%- JSON.stringify(user.fares) %>;
 
-        // FullCalendar 用のイベントデータを生成
+        // 各レコードから FullCalendar のイベントを生成
         const events = records.map(record => {
           let total = 0;
           for (let key in record.quantities) {
@@ -40,12 +46,13 @@
             start: record.date
           };
         });
-
+        
+        // FullCalendar の初期化
         var calendarEl = document.getElementById('calendar');
         var calendar = new FullCalendar.Calendar(calendarEl, {
           initialView: 'dayGridMonth',
           events: events,
-          // 表示期間が変わった際に当月の合計金額を計算して表示
+          // 表示期間が変わったときに当月の合計金額を計算して表示
           datesSet: function(info) {
             let monthTotal = 0;
             records.forEach(record => {
@@ -60,7 +67,7 @@
             });
             document.getElementById("monthTotal").textContent = "月合計: ¥" + monthTotal;
           },
-          // 閲覧専用のため、日付クリック時は編集不可のメッセージを表示
+          // 閲覧専用：日付クリック時は編集不可の旨を通知
           dateClick: function(info) {
             alert("閲覧専用です。編集はできません。");
           }
@@ -70,7 +77,7 @@
         console.error("Error loading calendar:", error);
       }
     }
-
+    
     document.addEventListener('DOMContentLoaded', loadCalendar);
   </script>
 </body>
