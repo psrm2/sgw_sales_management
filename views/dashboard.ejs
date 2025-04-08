@@ -21,21 +21,13 @@
     <button class="tablink" onclick="openTab(event, 'Graph')">グラフ</button>
     <button class="tablink" onclick="openTab(event, 'Settings')">設定</button>
   </div>
-  <!-- カレンダータブ（既存コード） -->
   <div id="Calendar" class="tabcontent">
     <div id="monthTotal" style="font-weight:bold; margin-bottom:10px;"></div>
     <div id="calendar" style="min-height:400px;"></div>
   </div>
-  <!-- グラフタブ：ナビゲーション用ボタンを追加 -->
   <div id="Graph" class="tabcontent" style="display:none">
-    <div id="graphNav" style="text-align: center; margin-bottom: 10px;">
-      <button id="prevMonth">←</button>
-      <span id="graphMonthLabel" style="margin: 0 10px; font-weight: bold;"></span>
-      <button id="nextMonth">→</button>
-    </div>
     <canvas id="graphCanvas"></canvas>
   </div>
-  <!-- 設定タブ -->
   <div id="Settings" class="tabcontent" style="display:none">
     <a href="/settings">運賃編集</a>
     <% if(user.username === "deldb") { %>
