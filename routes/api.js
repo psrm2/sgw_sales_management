@@ -8,7 +8,7 @@ const { ensureAuthenticated } = require('../middleware/auth');
 router.get('/records', ensureAuthenticated, async (req, res) => {
   try {
     let query;
-    // 管理者セッションの場合は、クエリパラメータ userId を使ってデータを取得
+    // 管理者セッションの場合は、クエリパラメータ userId を使ってデータ取得
     if (req.session.admin && req.query.userId) {
       query = { user: req.query.userId };
     } else if (req.user) {
@@ -55,15 +55,15 @@ router.post('/record', ensureAuthenticated, async (req, res) => {
   console.log("Formatted date:", formattedDate);
 
   try {
-    // 数量は文字列の場合もあるため、数値に変換
+    // 数量の各値を整数に変換
     for (let key in quantities) {
       quantities[key] = parseInt(quantities[key], 10) || 0;
     }
-    let record = await DataRecord.findOne({ user: req.user ? req.user._id : req.session.userId, date: formattedDate }).exec();
+    let record = await DataRecord.findOne({ user: req.user._id, date: formattedDate }).exec();
     if (record) {
       record.quantities = quantities;
     } else {
-      record = new DataRecord({ user: req.user ? req.user._id : req.session.userId, date: formattedDate, quantities: quantities });
+      record = new DataRecord({ user: req.user._id, date: formattedDate, quantities: quantities });
     }
     await record.save();
     res.json({ message: '保存しました' });
@@ -75,28 +75,64 @@ router.post('/record', ensureAuthenticated, async (req, res) => {
 
 // GET: ログインユーザーの運賃取得
 router.get('/fares', ensureAuthenticated, (req, res) => {
-  if (req.user) {
-    res.json(req.user.fares);
-  } else if (req.session.admin && req.query.userId) {
-    // 管理者の場合は、別途ユーザー情報を取得する必要があるが、ここでは admin_calendar.ejs で EJS 経由で運賃を渡すので不要
-    res.json({});
-  } else {
-    res.status(400).json({ error: 'ユーザー情報がありません' });
-  }
+  res.json(req.user.fares);
 });
 
 // POST: ログインユーザーの運賃更新
 router.post('/fares', ensureAuthenticated, async (req, res) => {
   try {
-    if (req.user) {
-      req.user.fares = req.body; // req.body は運賃オブジェクト
-      await req.user.save();
-      res.json({ message: '運賃を更新しました', fares: req.user.fares });
-    } else {
-      res.status(400).json({ error: 'ユーザー情報がありません' });
-    }
+    req.user.fares = req.body; // req.body は運賃オブジェクト
+    await req.user.save();
+    res.json({ message: '運賃を更新しました', fares: req.user.fares });
   } catch (e) {
     res.status(500).json({ error: '運賃更新に失敗しました' });
+  }
+});
+
+// GET: 対象月の合計金額をデータベースから計算して返す（対象ユーザーは通常ユーザーの場合は req.user、管理者の場合はクエリパラメータ userId）
+router.get('/monthlyTotal', ensureAuthenticated, async (req, res) => {
+  const year = parseInt(req.query.year, 10);
+  const month = parseInt(req.query.month, 10);
+  if (!year || !month) {
+    return res.status(400).json({ error: "year と month は必須です" });
+  }
+  let userId;
+  if (req.session.admin && req.query.userId) {
+    userId = req.query.userId;
+  } else if (req.user) {
+    userId = req.user._id;
+  } else {
+    return res.status(400).json({ error: "ユーザー情報がありません" });
+  }
+  // 当月の開始日と翌月の開始日を計算
+  const start = new Date(year, month - 1, 1);
+  const end = new Date(year, month, 1);
+  try {
+    // 日付フィールドは文字列として "YYYY-MM-DD" 形式で保存している前提
+    const startISO = start.toISOString().slice(0, 10);
+    const endISO = end.toISOString().slice(0, 10);
+    const records = await DataRecord.find({
+      user: userId,
+      date: { $gte: startISO, $lt: endISO }
+    }).exec();
+    // 対象ユーザーの運賃情報を取得（通常は req.user.fares ですが、管理者の場合は別途対象ユーザーの fares を EJS 経由で渡すのが望ましい）
+    let fares;
+    if (req.user && req.user._id.equals(userId)) {
+      fares = req.user.fares;
+    } else {
+      // 管理者の場合、対象ユーザーの fares 情報は admin_calendar.ejs 等で EJS 経由で渡すので、ここでは仮の空オブジェクトとします
+      fares = {};
+    }
+    let monthTotal = 0;
+    records.forEach(record => {
+      for (let key in record.quantities) {
+        monthTotal += (record.quantities[key] || 0) * (fares[key] || 0);
+      }
+    });
+    res.json({ monthTotal });
+  } catch (e) {
+    console.error("Error calculating monthly total:", e);
+    res.status(500).json({ error: "月合計の計算に失敗しました" });
   }
 });
 

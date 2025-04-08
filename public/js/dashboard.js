@@ -17,7 +17,7 @@ document.getElementById("defaultTab").click();
 
 document.addEventListener('DOMContentLoaded', async function() {
   try {
-    // ユーザーの入力データと運賃を API 経由で取得
+    // API 経由で入力データと運賃を取得
     const recordsResponse = await fetch('/api/records');
     const records = await recordsResponse.json();
     console.log("Records:", records);
@@ -29,30 +29,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     var calendarEl = document.getElementById('calendar');
     var calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'dayGridMonth',
-      // FullCalendar の activeStart/activeEnd を使い、表示される月のデータに限定する
-      datesSet: function(info) {
-        // info.view.activeStart / activeEnd は、現在の月の boundaries（例：2024-12-01 ～ 2025-01-01）となる
-        const currentMonthStart = info.view.activeStart;
-        const currentMonthEnd = info.view.activeEnd;
-        let monthTotal = 0;
-        // 計算対象は activeStart から activeEnd の範囲内のレコードのみ
-        records.forEach(record => {
-          const recordDate = new Date(record.date);
-          if (recordDate >= currentMonthStart && recordDate < currentMonthEnd) {
-            let dailyTotal = 0;
-            for (let key in record.quantities) {
-              dailyTotal += (record.quantities[key] || 0) * (fares[key] || 0);
-            }
-            monthTotal += dailyTotal;
-          }
-        });
-        document.getElementById("monthTotal").textContent = "月合計: ¥" + monthTotal;
-      },
-      // 既存のレコードからイベントを生成する際も、
-      // activeStart/activeEnd に基づいて表示対象とするのではなく、全レコードは表示（※カレンダー上ではセルの多くは先月・翌月の日付となるため）
       events: records.map(record => {
         let total = 0;
-        // ※ イベント表示については、全レコードの合計金額で表示
         for (let key in record.quantities) {
           total += (record.quantities[key] || 0) * (fares[key] || 0);
         }
@@ -61,22 +39,35 @@ document.addEventListener('DOMContentLoaded', async function() {
           start: record.date
         };
       }),
-      // 日付クリックは編集不可（管理者用の場合も閲覧専用）
+      datesSet: async function(info) {
+        // API 経由で、表示中の月 (info.view.activeStart ～ info.view.activeEnd) の合計金額を取得
+        const activeStart = info.view.activeStart;
+        const year = activeStart.getFullYear();
+        const month = activeStart.getMonth() + 1;
+        try {
+          const totalRes = await fetch(`/api/monthlyTotal?year=${year}&month=${month}`);
+          const result = await totalRes.json();
+          document.getElementById("monthTotal").textContent = "月合計: ¥" + result.monthTotal;
+        } catch (error) {
+          console.error("Error fetching monthly total:", error);
+        }
+      },
       dateClick: function(info) {
-        alert("閲覧専用です。編集はできません。");
+        // 日付クリックで個数入力画面へ遷移
+        window.location.href = '/input_quantity?date=' + info.dateStr;
       }
     });
     calendar.render();
 
-    // グラフ描画用に、対象月（activeStart ～ activeEnd）の日別売上を集計
+    // グラフ描画: 表示中の月の対象期間に対する日別売上集計
     const currentMonthStart = calendar.view.activeStart;
-    const currentMonthEnd = calendar.view.activeEnd;
-
+    const year = currentMonthStart.getFullYear();
+    const month = currentMonthStart.getMonth() + 1;
+    // API 経由で月合計と当月の日別データを再取得するか、上記 records からフィルタリングも可能です。ここでは records からフィルタリング
     let dailyTotals = {};
-    // activeStart ～ activeEnd の範囲内のレコードのみ対象
     records.forEach(record => {
       const recordDate = new Date(record.date);
-      if (recordDate >= currentMonthStart && recordDate < currentMonthEnd) {
+      if (recordDate >= currentMonthStart && recordDate < calendar.view.activeEnd) {
         if (!dailyTotals[record.date]) dailyTotals[record.date] = 0;
         for (let key in record.quantities) {
           dailyTotals[record.date] += (record.quantities[key] || 0) * (fares[key] || 0);
@@ -85,9 +76,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
     const labels = Object.keys(dailyTotals).sort();
     const dataValues = labels.map(label => dailyTotals[label]);
+    let monthLabel = year + "年" + month + "月";
 
-    // グラフに現在の月（日別データ）と何月かも表示する
-    let monthLabel = currentMonthStart.getFullYear() + "年" + (currentMonthStart.getMonth() + 1) + "月";
     var ctx = document.getElementById('graphCanvas').getContext('2d');
     new Chart(ctx, {
       type: 'bar',
@@ -106,6 +96,6 @@ document.addEventListener('DOMContentLoaded', async function() {
       }
     });
   } catch (error) {
-    console.error("Error loading calendar:", error);
+    console.error("Error loading dashboard:", error);
   }
 });
