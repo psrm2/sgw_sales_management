@@ -15,9 +15,9 @@ const User = require('./models/User');
 const app = express();
 
 // MongoDB 接続
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/sgw_sales', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/sgw_sales', { 
+  useNewUrlParser: true, 
+  useUnifiedTopology: true 
 });
 
 // ミドルウェア設定
@@ -26,11 +26,12 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'ejs');
 
+// セッションは30日間有効（クッキーの maxAge を設定）
 app.use(session({ 
   secret: process.env.SESSION_SECRET || 'secretkey', 
   resave: false, 
   saveUninitialized: false,
-  cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 } // 30日間有効
+  cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 }
 }));
 app.use(flash());
 app.use(passport.initialize());
@@ -59,7 +60,7 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
-// 各ルート設定
+// ルート設定
 const authRoutes = require('./routes/auth');
 const apiRoutes = require('./routes/api');
 const viewRoutes = require('./routes/view');
@@ -70,16 +71,20 @@ app.use('/', viewRoutes);
 app.use('/api', apiRoutes);
 app.use('/admin', adminRoutes);
 
-// ルート "/" へのアクセス時のリダイレクト処理
+// "/" へのアクセス時
+// ログイン状態なら、管理者セッションなら /admin/users、通常ユーザーなら /dashboard、未ログインなら /login へリダイレクト
 app.get('/', (req, res) => {
-  if (req.isAuthenticated() || req.session.admin) {
+  if (req.session.admin) {
+    res.redirect('/admin/users');
+  } else if (req.isAuthenticated()) {
     res.redirect('/dashboard');
   } else {
     res.redirect('/login');
   }
 });
 
-// HTTPS サーバーのオプション設定（プライベートキーと証明書のパスを指定）
+// HTTPS サーバーの起動
+// プライベートキーは /root/ssl/cf.key、証明書は /root/ssl/cf.pem として指定
 const options = {
   key: fs.readFileSync('/root/ssl/cf.key'),
   cert: fs.readFileSync('/root/ssl/cf.pem')
