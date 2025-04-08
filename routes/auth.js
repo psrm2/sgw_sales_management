@@ -15,12 +15,12 @@ router.post('/login', passport.authenticate('local', {
   failureFlash: true
 }));
 
-// 登録画面表示
+// ユーザー登録画面表示
 router.get('/register', (req, res) => {
   res.render('register', { message: req.flash('error') });
 });
 
-// 登録処理
+// ユーザー登録処理
 router.post('/register', async (req, res) => {
   try {
     const user = new User({
@@ -36,11 +36,15 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// ログアウト
+// ログアウト処理：セッション破棄、クッキークリア
 router.get('/logout', (req, res, next) => {
-  req.logout(err => {
+  req.logout(function(err) {
     if (err) return next(err);
-    res.redirect('/login');
+    req.session.destroy(function(err) {
+      if (err) return next(err);
+      res.clearCookie('connect.sid'); // セッション用クッキー名（一般的には 'connect.sid'）
+      res.redirect('/login');
+    });
   });
 });
 
