@@ -8,7 +8,7 @@
 <body>
   <header>
     <h1>登録ユーザー一覧</h1>
-    <!-- ログアウトボタン -->
+    <!-- ログアウトボタンをヘッダーに表示する場合はここに配置 -->
     <button onclick="window.location.href='/logout'">ログアウト</button>
   </header>
   <ul>
@@ -19,7 +19,6 @@
       </li>
     <% }); %>
   </ul>
-  <a href="/login">ログイン画面に戻る</a>
   <script>
     async function deleteUser(userId) {
       if (!confirm("本当にこのユーザーを削除しますか？この操作は元に戻せません。")) return;
