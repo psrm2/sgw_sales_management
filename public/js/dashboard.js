@@ -1,3 +1,11 @@
+let records = [];         // API から取得した全レコード
+let fares = {};           // API から取得した運賃情報
+let chartInstance = null; // Chart.js のインスタンス
+let currentGraphMonth = new Date(); // 現在表示中の月 (初期は現在月)
+
+// 日付は当月の1日にリセット
+currentGraphMonth.setDate(1);
+
 function openTab(evt, tabName) {
   var i, tabcontent, tablinks;
   tabcontent = document.getElementsByClassName("tabcontent");
@@ -17,15 +25,15 @@ document.getElementById("defaultTab").click();
 
 document.addEventListener('DOMContentLoaded', async function() {
   try {
-    // API 経由で入力データと運賃を取得
+    // API 経由でレコードと運賃情報を取得（全期間分を取得）
     const recordsResponse = await fetch('/api/records');
-    const records = await recordsResponse.json();
+    records = await recordsResponse.json();
     console.log("Records:", records);
-    
+
     const faresResponse = await fetch('/api/fares');
-    const fares = await faresResponse.json();
-  
-    // FullCalendar の初期化
+    fares = await faresResponse.json();
+
+    // FullCalendar の初期化（カレンダータブは引き続き既存の実装）
     var calendarEl = document.getElementById('calendar');
     var calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'dayGridMonth',
@@ -39,59 +47,76 @@ document.addEventListener('DOMContentLoaded', async function() {
           start: record.date
         };
       }),
-      // 表示されている月の境界を利用して、当月の合計金額を計算する
       datesSet: function(info) {
-        // calendar.view.currentStart/currentEnd は FullCalendar の内部で決定された表示領域（Date オブジェクト）
-        const currentStart = info.view.currentStart; // 表示月の開始日（ローカル）
-        const currentEnd = info.view.currentEnd;     // 翌月の1日（ローカル）、※当月末日より翌日の 0:00 として返ることが多い
-        let monthTotal = 0;
-        records.forEach(record => {
-          // 保存されている日付は "YYYY-MM-DD" 形式なので、T00:00:00を付加してローカル解釈
-          const recordDate = new Date(record.date + "T00:00:00");
-          if (recordDate >= currentStart && recordDate < currentEnd) {
-            let dailyTotal = 0;
-            for (let key in record.quantities) {
-              dailyTotal += (record.quantities[key] || 0) * (fares[key] || 0);
-            }
-            monthTotal += dailyTotal;
-          }
-        });
-        document.getElementById("monthTotal").textContent = "月合計: ¥" + monthTotal;
+        // FullCalendar の表示期間の activeStart と activeEnd は使用せず、グラフは別途 API を使用
+        // カレンダー上部の月合計は別途 /api/monthlyTotal を使用するか、同様に records からフィルタする
+        // ※ カレンダー自体は既存の実装で表示
       },
       dateClick: function(info) {
-        // 日付クリックで個数入力画面へ遷移
         window.location.href = '/input_quantity?date=' + info.dateStr;
       }
     });
     calendar.render();
-  
-    // グラフ描画: 当月の日別売上集計
-    const currentMonthStart = calendar.view.currentStart;
-    const currentMonthEnd = calendar.view.currentEnd;
-    const year = currentMonthStart.getFullYear();
-    const month = currentMonthStart.getMonth() + 1;
-    let dailyTotals = {};
-    records.forEach(record => {
-      // 同様に、保存されている日付をローカル時間として解釈
-      const recordDate = new Date(record.date + "T00:00:00");
-      if (recordDate >= currentMonthStart && recordDate < currentMonthEnd) {
-        if (!dailyTotals[record.date]) dailyTotals[record.date] = 0;
-        for (let key in record.quantities) {
-          dailyTotals[record.date] += (record.quantities[key] || 0) * (fares[key] || 0);
-        }
-      }
+
+    // 初期状態のグラフ描画
+    updateGraph();
+
+    // 矢印ボタンのイベントリスナーを設定
+    document.getElementById("prevMonth").addEventListener('click', function() {
+      currentGraphMonth.setMonth(currentGraphMonth.getMonth() - 1);
+      updateGraph();
     });
-    const labels = Object.keys(dailyTotals).sort();
-    const dataValues = labels.map(label => dailyTotals[label]);
-    let monthLabel = year + "年" + month + "月";
-  
-    var ctx = document.getElementById('graphCanvas').getContext('2d');
-    new Chart(ctx, {
+    document.getElementById("nextMonth").addEventListener('click', function() {
+      currentGraphMonth.setMonth(currentGraphMonth.getMonth() + 1);
+      updateGraph();
+    });
+  } catch (error) {
+    console.error("Error loading dashboard:", error);
+  }
+});
+
+function updateGraph() {
+  // 当月の初日と末日を計算 (Date 型)
+  const year = currentGraphMonth.getFullYear();
+  const month = currentGraphMonth.getMonth();
+  const monthStart = new Date(year, month, 1);
+  const monthEnd = new Date(year, month + 1, 1); // 翌月の1日
+  // Update グラフ上部の月表示
+  document.getElementById("graphMonthLabel").textContent = `${year}年${month + 1}月`;
+
+  // records から当月のレコードのみをフィルタリング
+  let filteredRecords = records.filter(record => {
+    // 保存されている record.date は "YYYY-MM-DD" 形式、"T00:00:00" 付加してローカル時間として扱う
+    const recordDate = new Date(record.date + "T00:00:00");
+    return recordDate >= monthStart && recordDate < monthEnd;
+  });
+
+  // 日別売上集計
+  let dailyTotals = {};
+  filteredRecords.forEach(record => {
+    // record.date は文字列 "YYYY-MM-DD" をキーとして利用
+    if (!dailyTotals[record.date]) dailyTotals[record.date] = 0;
+    for (let key in record.quantities) {
+      dailyTotals[record.date] += (record.quantities[key] || 0) * (fares[key] || 0);
+    }
+  });
+  const labels = Object.keys(dailyTotals).sort();
+  const dataValues = labels.map(label => dailyTotals[label]);
+
+  // Chart.js でグラフ更新
+  const ctx = document.getElementById('graphCanvas').getContext('2d');
+  if (chartInstance) {
+    chartInstance.data.labels = labels;
+    chartInstance.data.datasets[0].data = dataValues;
+    chartInstance.data.datasets[0].label = `${year}年${month + 1}月 日別売上`;
+    chartInstance.update();
+  } else {
+    chartInstance = new Chart(ctx, {
       type: 'bar',
       data: {
         labels: labels,
         datasets: [{
-          label: monthLabel + " 日別売上",
+          label: `${year}年${month + 1}月 日別売上`,
           data: dataValues,
           backgroundColor: 'rgba(0, 123, 255, 0.5)'
         }]
@@ -102,7 +127,5 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
       }
     });
-  } catch (error) {
-    console.error("Error loading dashboard:", error);
   }
-});
+}
