@@ -104,12 +104,12 @@ router.get('/monthlyTotal', ensureAuthenticated, async (req, res) => {
   } else {
     return res.status(400).json({ error: "ユーザー情報がありません" });
   }
-  // 当月の初日
-  const start = new Date(year, month - 1, 1);
-  const startISO = start.toISOString().slice(0, 10);
-  // 当月の末日（new Date(year, month, 0) は当月の最終日）
-  const endDate = new Date(year, month, 0);
-  const endISO = endDate.toISOString().slice(0, 10);
+  // 当月の初日と末日を文字列で生成
+  const pad = n => n < 10 ? '0' + n : '' + n;
+  const startISO = `${year}-${pad(month)}-01`;
+  const lastDay = new Date(year, month, 0).getDate();  // new Date(year, month, 0)は当月の最終日
+  const endISO = `${year}-${pad(month)}-${pad(lastDay)}`;
+  
   try {
     const records = await DataRecord.find({
       user: userId,
