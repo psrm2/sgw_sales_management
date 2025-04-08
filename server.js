@@ -85,7 +85,8 @@ const options = {
   cert: fs.readFileSync('/root/ssl/cf.pem')
 };
 
-const PORT = process.env.PORT || 443;
+const PORT = 443;
 https.createServer(options, app).listen(PORT, () => {
   console.log(`HTTPS Server started on port ${PORT}`);
 });
+
