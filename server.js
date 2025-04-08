@@ -1,4 +1,6 @@
 require('dotenv').config();
+const https = require('https');
+const fs = require('fs');
 const express = require('express');
 const session = require('express-session');
 const bodyParser = require('body-parser');
@@ -13,9 +15,9 @@ const User = require('./models/User');
 const app = express();
 
 // MongoDB 接続
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/sgw_sales', { 
-  useNewUrlParser: true, 
-  useUnifiedTopology: true 
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/sgw_sales', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
 });
 
 // ミドルウェア設定
@@ -57,7 +59,7 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
-// 各ルートの設定
+// 各ルート設定
 const authRoutes = require('./routes/auth');
 const apiRoutes = require('./routes/api');
 const viewRoutes = require('./routes/view');
@@ -68,7 +70,7 @@ app.use('/', viewRoutes);
 app.use('/api', apiRoutes);
 app.use('/admin', adminRoutes);
 
-// ルート "/" へのアクセス時のリダイレクト処理（変更箇所）
+// ルート "/" へのアクセス時のリダイレクト処理
 app.get('/', (req, res) => {
   if (req.isAuthenticated() || req.session.admin) {
     res.redirect('/dashboard');
@@ -77,7 +79,13 @@ app.get('/', (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
+// HTTPS サーバーのオプション設定（プライベートキーと証明書のパスを指定）
+const options = {
+  key: fs.readFileSync('/root/ssl/cf.key'),
+  cert: fs.readFileSync('/root/ssl/cf.pem')
+};
+
+const PORT = process.env.PORT || 443;
+https.createServer(options, app).listen(PORT, () => {
+  console.log(`HTTPS Server started on port ${PORT}`);
 });
