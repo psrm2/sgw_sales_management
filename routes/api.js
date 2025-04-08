@@ -89,10 +89,10 @@ router.post('/fares', ensureAuthenticated, async (req, res) => {
   }
 });
 
-// GET: 対象月の合計金額をデータベースから計算して返す
+// GET: 対象月の合計金額をデータベースから計算して返す（当月の1日～当月末日）
 router.get('/monthlyTotal', ensureAuthenticated, async (req, res) => {
   const year = parseInt(req.query.year, 10);
-  const month = parseInt(req.query.month, 10);
+  const month = parseInt(req.query.month, 10); // 1～12 の月
   if (!year || !month) {
     return res.status(400).json({ error: "year と month は必須です" });
   }
@@ -104,21 +104,22 @@ router.get('/monthlyTotal', ensureAuthenticated, async (req, res) => {
   } else {
     return res.status(400).json({ error: "ユーザー情報がありません" });
   }
+  // 当月の初日
   const start = new Date(year, month - 1, 1);
-  const end = new Date(year, month, 1);
+  const startISO = start.toISOString().slice(0, 10);
+  // 当月の末日（new Date(year, month, 0) は当月の最終日）
+  const endDate = new Date(year, month, 0);
+  const endISO = endDate.toISOString().slice(0, 10);
   try {
-    const startISO = start.toISOString().slice(0, 10);
-    const endISO = end.toISOString().slice(0, 10);
     const records = await DataRecord.find({
       user: userId,
-      date: { $gte: startISO, $lt: endISO }
+      date: { $gte: startISO, $lte: endISO }
     }).exec();
     let fares;
     const User = require('../models/User');
     if (req.user && req.user._id.equals(userId)) {
       fares = req.user.fares;
     } else {
-      // 管理者の場合は、対象ユーザーの fares を DB から取得
       const targetUser = await User.findById(userId).exec();
       fares = targetUser ? targetUser.fares : {};
     }
