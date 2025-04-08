@@ -2,12 +2,15 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>管理者用：登録ユーザー一覧</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <h1>登録ユーザー一覧</h1>
+  <header>
+    <h1>登録ユーザー一覧</h1>
+    <!-- ログアウトボタン -->
+    <button onclick="window.location.href='/logout'">ログアウト</button>
+  </header>
   <ul>
     <% users.forEach(function(user) { %>
       <li>

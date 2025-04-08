@@ -22,7 +22,7 @@ router.get('/login', (req, res) => {
   }
 });
 
-// 登録済みユーザー一覧表示（管理者専用）
+// 登録済みユーザー一覧表示
 router.get('/users', ensureAdminAccess, async (req, res) => {
   try {
     const users = await User.find({}, 'username').exec();
