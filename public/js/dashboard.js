@@ -16,95 +16,96 @@ function openTab(evt, tabName) {
 document.getElementById("defaultTab").click();
 
 document.addEventListener('DOMContentLoaded', async function() {
-  // API 経由でユーザーの入力データと運賃を取得
-  const recordsResponse = await fetch('/api/records');
-  const records = await recordsResponse.json();
-  
-  const faresResponse = await fetch('/api/fares');
-  const fares = await faresResponse.json();
-
-  // FullCalendar の初期化
-  var calendarEl = document.getElementById('calendar');
-  var calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: 'dayGridMonth',
-    // カレンダーの表示期間が変わったときに呼ばれるコールバック
-    datesSet: function(info) {
-      let monthTotal = 0;
-      // info.start, info.end: 表示開始・終了日（Date オブジェクト）
-      records.forEach(record => {
-        const recordDate = new Date(record.date);
-        // 表示期間内のレコードを集計
-        if (recordDate >= info.start && recordDate < info.end) {
-          let dailyTotal = 0;
-          for (let key in record.quantities) {
-            dailyTotal += (record.quantities[key] || 0) * (fares[key] || 0);
-          }
-          monthTotal += dailyTotal;
-        }
-      });
-      document.getElementById("monthTotal").textContent = "月合計: ¥" + monthTotal;
-    },
-    // 既存のレコードからイベントを生成
-    events: records.map(record => {
-      let total = 0;
-      for (let key in record.quantities) {
-        total += (record.quantities[key] || 0) * (fares[key] || 0);
-      }
-      return {
-        title: '¥' + total,
-        start: record.date
-      };
-    }),
-    dateClick: function(info) {
-      // 日付クリックで、その日の入力データ編集画面へ遷移
-      window.location.href = '/input_quantity?date=' + info.dateStr;
-    }
-  });
-  calendar.render();
-
-  // グラフ表示例：当月の日別売上集計（Chart.js 使用）
-  let dailyTotals = {};
-  records.forEach(record => {
-    if (!dailyTotals[record.date]) dailyTotals[record.date] = 0;
-    for (let key in record.quantities) {
-      dailyTotals[record.date] += (record.quantities[key] || 0) * (fares[key] || 0);
-    }
-  });
-  const labels = Object.keys(dailyTotals).sort();
-  const dataValues = labels.map(label => dailyTotals[label]);
-
-  var ctx = document.getElementById('graphCanvas').getContext('2d');
-  var myChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: '日別売上',
-        data: dataValues,
-        backgroundColor: 'rgba(0, 123, 255, 0.5)'
-      }]
-    },
-    options: {
-      scales: {
-        y: { beginAtZero: true }
-      }
-    }
-  });
-});
-
-// MongoDB 初期化用関数（ログインユーザーが "deldb" の場合のみ）
-async function resetDatabase() {
-  if (!confirm("本当に MongoDB を初期化してすべてのデータを削除しますか？")) return;
   try {
-    const response = await fetch('/api/reset', { method: 'POST' });
-    if (response.ok) {
-      alert("データベースを初期化しました");
-      location.reload();
-    } else {
-      const result = await response.json();
-      alert("初期化に失敗しました: " + result.error);
-    }
-  } catch (err) {
-    alert("エラーが発生しました: " + err.message);
+    // ユーザーの入力データと運賃を API 経由で取得
+    const recordsResponse = await fetch('/api/records');
+    const records = await recordsResponse.json();
+    console.log("Records:", records);
+
+    const faresResponse = await fetch('/api/fares');
+    const fares = await faresResponse.json();
+
+    // FullCalendar の初期化
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: 'dayGridMonth',
+      // FullCalendar の activeStart/activeEnd を使い、表示される月のデータに限定する
+      datesSet: function(info) {
+        // info.view.activeStart / activeEnd は、現在の月の boundaries（例：2024-12-01 ～ 2025-01-01）となる
+        const currentMonthStart = info.view.activeStart;
+        const currentMonthEnd = info.view.activeEnd;
+        let monthTotal = 0;
+        // 計算対象は activeStart から activeEnd の範囲内のレコードのみ
+        records.forEach(record => {
+          const recordDate = new Date(record.date);
+          if (recordDate >= currentMonthStart && recordDate < currentMonthEnd) {
+            let dailyTotal = 0;
+            for (let key in record.quantities) {
+              dailyTotal += (record.quantities[key] || 0) * (fares[key] || 0);
+            }
+            monthTotal += dailyTotal;
+          }
+        });
+        document.getElementById("monthTotal").textContent = "月合計: ¥" + monthTotal;
+      },
+      // 既存のレコードからイベントを生成する際も、
+      // activeStart/activeEnd に基づいて表示対象とするのではなく、全レコードは表示（※カレンダー上ではセルの多くは先月・翌月の日付となるため）
+      events: records.map(record => {
+        let total = 0;
+        // ※ イベント表示については、全レコードの合計金額で表示
+        for (let key in record.quantities) {
+          total += (record.quantities[key] || 0) * (fares[key] || 0);
+        }
+        return {
+          title: '¥' + total,
+          start: record.date
+        };
+      }),
+      // 日付クリックは編集不可（管理者用の場合も閲覧専用）
+      dateClick: function(info) {
+        alert("閲覧専用です。編集はできません。");
+      }
+    });
+    calendar.render();
+
+    // グラフ描画用に、対象月（activeStart ～ activeEnd）の日別売上を集計
+    const currentMonthStart = calendar.view.activeStart;
+    const currentMonthEnd = calendar.view.activeEnd;
+
+    let dailyTotals = {};
+    // activeStart ～ activeEnd の範囲内のレコードのみ対象
+    records.forEach(record => {
+      const recordDate = new Date(record.date);
+      if (recordDate >= currentMonthStart && recordDate < currentMonthEnd) {
+        if (!dailyTotals[record.date]) dailyTotals[record.date] = 0;
+        for (let key in record.quantities) {
+          dailyTotals[record.date] += (record.quantities[key] || 0) * (fares[key] || 0);
+        }
+      }
+    });
+    const labels = Object.keys(dailyTotals).sort();
+    const dataValues = labels.map(label => dailyTotals[label]);
+
+    // グラフに現在の月（日別データ）と何月かも表示する
+    let monthLabel = currentMonthStart.getFullYear() + "年" + (currentMonthStart.getMonth() + 1) + "月";
+    var ctx = document.getElementById('graphCanvas').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: monthLabel + " 日別売上",
+          data: dataValues,
+          backgroundColor: 'rgba(0, 123, 255, 0.5)'
+        }]
+      },
+      options: {
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+  } catch (error) {
+    console.error("Error loading calendar:", error);
   }
-}
+});
