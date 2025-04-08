@@ -8,7 +8,7 @@ const { ensureAuthenticated } = require('../middleware/auth');
 router.get('/records', ensureAuthenticated, async (req, res) => {
   try {
     let query;
-    // 管理者セッションの場合は、クエリパラメータ userId を使ってデータ取得
+    // 管理者セッションの場合は、クエリパラメータ userId を使ってデータを取得
     if (req.session.admin && req.query.userId) {
       query = { user: req.query.userId };
     } else if (req.user) {
@@ -89,7 +89,7 @@ router.post('/fares', ensureAuthenticated, async (req, res) => {
   }
 });
 
-// GET: 対象月の合計金額をデータベースから計算して返す（対象ユーザーは通常ユーザーの場合は req.user、管理者の場合はクエリパラメータ userId）
+// GET: 対象月の合計金額をデータベースから計算して返す
 router.get('/monthlyTotal', ensureAuthenticated, async (req, res) => {
   const year = parseInt(req.query.year, 10);
   const month = parseInt(req.query.month, 10);
@@ -104,24 +104,23 @@ router.get('/monthlyTotal', ensureAuthenticated, async (req, res) => {
   } else {
     return res.status(400).json({ error: "ユーザー情報がありません" });
   }
-  // 当月の開始日と翌月の開始日を計算
   const start = new Date(year, month - 1, 1);
   const end = new Date(year, month, 1);
   try {
-    // 日付フィールドは文字列として "YYYY-MM-DD" 形式で保存している前提
     const startISO = start.toISOString().slice(0, 10);
     const endISO = end.toISOString().slice(0, 10);
     const records = await DataRecord.find({
       user: userId,
       date: { $gte: startISO, $lt: endISO }
     }).exec();
-    // 対象ユーザーの運賃情報を取得（通常は req.user.fares ですが、管理者の場合は別途対象ユーザーの fares を EJS 経由で渡すのが望ましい）
     let fares;
+    const User = require('../models/User');
     if (req.user && req.user._id.equals(userId)) {
       fares = req.user.fares;
     } else {
-      // 管理者の場合、対象ユーザーの fares 情報は admin_calendar.ejs 等で EJS 経由で渡すので、ここでは仮の空オブジェクトとします
-      fares = {};
+      // 管理者の場合は、対象ユーザーの fares を DB から取得
+      const targetUser = await User.findById(userId).exec();
+      fares = targetUser ? targetUser.fares : {};
     }
     let monthTotal = 0;
     records.forEach(record => {
